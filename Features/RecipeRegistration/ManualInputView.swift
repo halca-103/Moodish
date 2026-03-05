@@ -17,6 +17,8 @@ struct ManualInputView: View {
     @State private var weight: Weight = .normal
     @State private var ingredients: [String] = [""]
     @State private var steps: [String] = [""]
+    
+    var onComplete: (() -> Void)? = nil
 
     var isValid: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
 
@@ -125,16 +127,29 @@ struct ManualInputView: View {
         }
     }
 
+//    private func saveRecipe() {
+//        let recipe = Recipe(
+//            name: name.trimmingCharacters(in: .whitespaces),
+//            cookingTime: cookingTime,
+//            weight: weight,
+//            ingredients: ingredients.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty },
+//            steps: steps.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+//        )
+//        let repository = RecipeRepository(context: modelContext)
+//        try? repository.save(recipe)
+//        dismiss()
+//    }
     private func saveRecipe() {
         let recipe = Recipe(
-            name: name.trimmingCharacters(in: .whitespaces),
+            name: name,
             cookingTime: cookingTime,
             weight: weight,
-            ingredients: ingredients.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty },
-            steps: steps.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+            ingredients: ingredients.filter { !$0.isEmpty },
+            steps: steps.filter { !$0.isEmpty }
         )
         let repository = RecipeRepository(context: modelContext)
         try? repository.save(recipe)
+        onComplete?()
         dismiss()
     }
 }

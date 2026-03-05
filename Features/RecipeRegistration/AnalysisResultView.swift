@@ -14,6 +14,7 @@ struct AnalysisResultView: View {
 
     let result: RecipeAnalysisResult
     let image: UIImage
+    var onRegistered: (() -> Void)? = nil
 
     @State private var name: String
     @State private var cookingTime: Int
@@ -21,9 +22,10 @@ struct AnalysisResultView: View {
     @State private var ingredients: [String]
     @State private var steps: [String]
 
-    init(result: RecipeAnalysisResult, image: UIImage) {
+    init(result: RecipeAnalysisResult, image: UIImage, onRegistered: (() -> Void)? = nil) {
         self.result = result
         self.image = image
+        self.onRegistered = onRegistered
         _name        = State(initialValue: result.name)
         _cookingTime = State(initialValue: result.cookingTime)
         _weight      = State(initialValue: Weight(rawValue: result.weight) ?? .normal)
@@ -105,6 +107,19 @@ struct AnalysisResultView: View {
         }
     }
 
+//    private func saveRecipe() {
+//        let recipe = Recipe(
+//            name: name,
+//            cookingTime: cookingTime,
+//            weight: weight,
+//            ingredients: ingredients.filter { !$0.isEmpty },
+//            steps: steps.filter { !$0.isEmpty }
+//        )
+//        let repository = RecipeRepository(context: modelContext)
+//        try? repository.save(recipe)
+//        // ルートまで戻る
+//        dismiss()
+//    }
     private func saveRecipe() {
         let recipe = Recipe(
             name: name,
@@ -115,7 +130,7 @@ struct AnalysisResultView: View {
         )
         let repository = RecipeRepository(context: modelContext)
         try? repository.save(recipe)
-        // ルートまで戻る
+        onRegistered?()
         dismiss()
     }
 }

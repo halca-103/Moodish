@@ -5,13 +5,45 @@
 //  Created by Fukushima Haruka on 2026/03/04.
 //
 
+//import SwiftUI
+//
+//@main
+//struct tasteLogApp: App {
+//    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+//
+//    var body: some Scene {
+//        WindowGroup {
+//            ContentView()
+//        }
+//    }
+//}
+
 import SwiftUI
+import SwiftData
 
 @main
 struct TasteLogApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+
+    var sharedModelContainer: ModelContainer = {
+        let schema = Schema([Recipe.self, CookingLog.self])
+        let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        do {
+            return try ModelContainer(for: schema, configurations: [config])
+        } catch {
+            fatalError("ModelContainer作成失敗: \(error)")
+        }
+    }()
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            if hasCompletedOnboarding {
+                ContentView()
+            } else {
+                OnboardingView()
+            }
         }
+        .modelContainer(sharedModelContainer)
     }
 }

@@ -6,14 +6,43 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		E9ADC24C2F581EA8003E81AF /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = E9ADC24B2F581EA8003E81AF /* GoogleService-Info.plist */; };
+		E9ADC24F2F582159003E81AF /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = E9ADC24E2F582159003E81AF /* FirebaseAnalytics */; };
+		E9ADC2512F582159003E81AF /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = E9ADC2502F582159003E81AF /* FirebaseCore */; };
+		E9ADC2532F582159003E81AF /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = E9ADC2522F582159003E81AF /* FirebaseCrashlytics */; };
+		E9ADC2552F582159003E81AF /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = E9ADC2542F582159003E81AF /* FirebaseFirestore */; };
+		E9ADC2572F582159003E81AF /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = E9ADC2562F582159003E81AF /* FirebaseFunctions */; };
+		E9ADC2592F582159003E81AF /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = E9ADC2582F582159003E81AF /* FirebaseStorage */; };
+		E9ADC25B2F582190003E81AF /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9ADC25A2F582183003E81AF /* AppDelegate.swift */; };
+		E9ADC25E2F582487003E81AF /* GoogleGenerativeAI in Frameworks */ = {isa = PBXBuildFile; productRef = E9ADC25D2F582487003E81AF /* GoogleGenerativeAI */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		E9ADC2372F581838003E81AF /* TasteLog.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TasteLog.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E9ADC24B2F581EA8003E81AF /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		E9ADC25A2F582183003E81AF /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		E9ADC2392F581838003E81AF /* TasteLog */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = TasteLog;
+			sourceTree = "<group>";
+		};
+		E9ADC25F2F5825EE003E81AF /* Core */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Core;
+			sourceTree = "<group>";
+		};
+		E9ADC2612F582609003E81AF /* Features */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Features;
+			sourceTree = "<group>";
+		};
+		E9ADC2622F582614003E81AF /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Shared;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -23,6 +52,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E9ADC2532F582159003E81AF /* FirebaseCrashlytics in Frameworks */,
+				E9ADC2552F582159003E81AF /* FirebaseFirestore in Frameworks */,
+				E9ADC2572F582159003E81AF /* FirebaseFunctions in Frameworks */,
+				E9ADC2512F582159003E81AF /* FirebaseCore in Frameworks */,
+				E9ADC25E2F582487003E81AF /* GoogleGenerativeAI in Frameworks */,
+				E9ADC24F2F582159003E81AF /* FirebaseAnalytics in Frameworks */,
+				E9ADC2592F582159003E81AF /* FirebaseStorage in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -32,6 +68,11 @@
 		E9ADC22E2F581838003E81AF = {
 			isa = PBXGroup;
 			children = (
+				E9ADC2612F582609003E81AF /* Features */,
+				E9ADC2622F582614003E81AF /* Shared */,
+				E9ADC25F2F5825EE003E81AF /* Core */,
+				E9ADC24B2F581EA8003E81AF /* GoogleService-Info.plist */,
+				E9ADC25A2F582183003E81AF /* AppDelegate.swift */,
 				E9ADC2392F581838003E81AF /* TasteLog */,
 				E9ADC2382F581838003E81AF /* Products */,
 			);
@@ -62,9 +103,19 @@
 			);
 			fileSystemSynchronizedGroups = (
 				E9ADC2392F581838003E81AF /* TasteLog */,
+				E9ADC25F2F5825EE003E81AF /* Core */,
+				E9ADC2612F582609003E81AF /* Features */,
+				E9ADC2622F582614003E81AF /* Shared */,
 			);
 			name = TasteLog;
 			packageProductDependencies = (
+				E9ADC24E2F582159003E81AF /* FirebaseAnalytics */,
+				E9ADC2502F582159003E81AF /* FirebaseCore */,
+				E9ADC2522F582159003E81AF /* FirebaseCrashlytics */,
+				E9ADC2542F582159003E81AF /* FirebaseFirestore */,
+				E9ADC2562F582159003E81AF /* FirebaseFunctions */,
+				E9ADC2582F582159003E81AF /* FirebaseStorage */,
+				E9ADC25D2F582487003E81AF /* GoogleGenerativeAI */,
 			);
 			productName = TasteLog;
 			productReference = E9ADC2372F581838003E81AF /* TasteLog.app */;
@@ -94,6 +145,10 @@
 			);
 			mainGroup = E9ADC22E2F581838003E81AF;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				E9ADC24D2F582159003E81AF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				E9ADC25C2F582487003E81AF /* XCRemoteSwiftPackageReference "generative-ai-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = E9ADC2382F581838003E81AF /* Products */;
 			projectDirPath = "";
@@ -109,6 +164,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E9ADC24C2F581EA8003E81AF /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -119,6 +175,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E9ADC25B2F582190003E81AF /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -177,7 +234,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -234,7 +291,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -251,13 +308,20 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = U63A39Q265;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "";
+				INFOPLIST_KEY_LSApplicationCategoryType = "";
+				INFOPLIST_KEY_NSCameraUsageDescription = "料理写真を撮影するためカメラを使用します";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "料理写真を保存するため写真ライブラリへ追加します";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "料理写真を保存するため写真ライブラリを使用します";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -278,13 +342,20 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = U63A39Q265;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "";
+				INFOPLIST_KEY_LSApplicationCategoryType = "";
+				INFOPLIST_KEY_NSCameraUsageDescription = "料理写真を撮影するためカメラを使用します";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "料理写真を保存するため写真ライブラリへ追加します";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "料理写真を保存するため写真ライブラリを使用します";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -320,6 +391,63 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		E9ADC24D2F582159003E81AF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.10.0;
+			};
+		};
+		E9ADC25C2F582487003E81AF /* XCRemoteSwiftPackageReference "generative-ai-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/generative-ai-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.5.6;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		E9ADC24E2F582159003E81AF /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E9ADC24D2F582159003E81AF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		E9ADC2502F582159003E81AF /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E9ADC24D2F582159003E81AF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		E9ADC2522F582159003E81AF /* FirebaseCrashlytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E9ADC24D2F582159003E81AF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCrashlytics;
+		};
+		E9ADC2542F582159003E81AF /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E9ADC24D2F582159003E81AF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		E9ADC2562F582159003E81AF /* FirebaseFunctions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E9ADC24D2F582159003E81AF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFunctions;
+		};
+		E9ADC2582F582159003E81AF /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E9ADC24D2F582159003E81AF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
+		};
+		E9ADC25D2F582487003E81AF /* GoogleGenerativeAI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E9ADC25C2F582487003E81AF /* XCRemoteSwiftPackageReference "generative-ai-swift" */;
+			productName = GoogleGenerativeAI;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = E9ADC22F2F581838003E81AF /* Project object */;
 }

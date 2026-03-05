@@ -110,7 +110,9 @@ struct RecipeListView: View {
                 }
             }
             .sheet(isPresented: $showRegistration) {
-                RegistrationMethodView()
+                RegistrationMethodView(onComplete: {
+                    showRegistration = false
+                })
             }
         }
     }

@@ -19,13 +19,16 @@
 
 
 import SwiftUI
+import SwiftData
 
 struct RecipeDetailView: View {
     let recipe: Recipe
     let mood: Mood
+    @Query(sort: \CookingLog.cookedAt, order: .reverse) private var logs: [CookingLog]
+    
 
     @State private var navigateToTimer = false
-
+    //@Query private var logs: [CookingLog]
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
@@ -62,6 +65,40 @@ struct RecipeDetailView: View {
                     }
 
                     Divider()
+                    
+                    // 最新ログのメモを表示（材料の上）
+                    let recentMemos = logs
+                        .filter { $0.recipe?.id == recipe.id && !$0.memo.isEmpty }
+                        .sorted { $0.cookedAt > $1.cookedAt }
+                        .prefix(3)
+
+                    if !recentMemos.isEmpty {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("一言メモ")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(.secondary)
+                            ForEach(Array(recentMemos), id: \.id) { log in
+                                HStack(alignment: .top, spacing: 8) {
+                                    Text(log.moodEnum.emoji)
+                                        .font(.system(size: 14))
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(log.memo)
+                                            .font(.system(size: 14))
+                                            .lineSpacing(3)
+                                        Text(log.cookedAt.formatted(.dateTime.month().day()))
+                                            .font(.system(size: 11))
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                                .padding(12)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(Color(.systemGray6))
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                            }
+                        }
+
+                        Divider()
+                    }
 
                     // 材料
                     VStack(alignment: .leading, spacing: 10) {

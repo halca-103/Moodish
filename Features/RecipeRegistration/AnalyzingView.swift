@@ -7,7 +7,10 @@
 import SwiftUI
 
 struct AnalyzingView: View {
+    @Environment(\.dismiss) private var dismiss
+
     let image: UIImage
+    var onComplete: (() -> Void)? = nil
     @State private var viewModel = ImageAnalysisViewModel()
     @State private var navigateToConfirm = false
     @State private var result: RecipeAnalysisResult?
@@ -70,7 +73,14 @@ struct AnalyzingView: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(isPresented: $navigateToConfirm) {
             if let result {
-                AnalysisResultView(result: result, image: image)
+                AnalysisResultView(
+                    result: result,
+                    image: image,
+                    onRegistered: {
+                        onComplete?()
+                        dismiss()
+                    }
+                )
             }
         }
         .task {

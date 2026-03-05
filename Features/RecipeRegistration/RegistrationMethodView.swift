@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct RegistrationMethodView: View {
+    var onComplete: (() -> Void)? = nil 
     @State private var showImagePicker = false
     @State private var showManualInput = false
     @State private var showURLInput   = false
@@ -99,7 +100,7 @@ struct RegistrationMethodView: View {
             }
             // 手打ち入力へ遷移
             .navigationDestination(isPresented: $showManualInput) {
-                ManualInputView()
+                ManualInputView(onComplete: onComplete)
             }
             // URL入力へ遷移（P2-11で実装）
             .navigationDestination(isPresented: $showURLInput) {
@@ -117,7 +118,7 @@ struct RegistrationMethodView: View {
             
             .navigationDestination(isPresented: $navigateToAnalyzing) {
                 if let image = selectedImage {
-                    AnalyzingView(image: image)
+                    AnalyzingView(image: image, onComplete: onComplete)
                 }
             }
 

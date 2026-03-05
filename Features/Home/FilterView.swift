@@ -14,6 +14,9 @@ struct FilterView: View {
     @State private var ingredientInput: String = ""
     @State private var selectedIngredients: [String] = []
     @State private var navigateToSuggestion = false
+    
+    @State private var selectedFlavors: Set<String> = []
+
 
     var body: some View {
         ScrollView {
@@ -34,6 +37,25 @@ struct FilterView: View {
                         }
                     }
                 }
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("味・性質")
+                        .font(.system(size: 15, weight: .semibold))
+                    FlowLayout(spacing: 8) {
+                        ForEach(["さっぱり", "こってり", "温かい", "冷たい", "辛い", "甘い"], id: \.self) { flavor in
+                            ChipButton(
+                                label: flavor,
+                                isSelected: selectedFlavors.contains(flavor)
+                            ) {
+                                if selectedFlavors.contains(flavor) {
+                                    selectedFlavors.remove(flavor)
+                                } else {
+                                    selectedFlavors.insert(flavor)
+                                }
+                            }
+                        }
+                    }
+                }
+
 
                 // 使いたい食材
                 VStack(alignment: .leading, spacing: 10) {
