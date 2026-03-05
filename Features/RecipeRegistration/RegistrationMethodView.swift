@@ -13,13 +13,26 @@ struct RegistrationMethodView: View {
     @State private var showURLInput   = false
     @State private var imageSource: UIImagePickerController.SourceType = .photoLibrary
     @State private var showActionSheet = false
+    @State private var selectedImage: UIImage? = nil
+    @State private var navigateToAnalyzing = false
+    @State private var showCameraActionSheet = false
 
     var body: some View {
         NavigationStack {
             List {
                 // 画像から登録
+//                Button {
+//                    showActionSheet = true
+//                } label: {
+//                    MethodRow(
+//                        icon: "camera",
+//                        title: "画像から登録",
+//                        description: "AIが自動でレシピを読み取る",
+//                        isHighlighted: true
+//                    )
+//                }
                 Button {
-                    showActionSheet = true
+                    showCameraActionSheet = true
                 } label: {
                     MethodRow(
                         icon: "camera",
@@ -54,16 +67,35 @@ struct RegistrationMethodView: View {
             .navigationTitle("まずはレシピを登録")
             .navigationBarTitleDisplayMode(.inline)
             // カメラ / ライブラリ選択
-            .confirmationDialog("レシピの写真を選んでください", isPresented: $showActionSheet, titleVisibility: .visible) {
-                Button("カメラで撮影") {
-                    imageSource = .camera
-                    showImagePicker = true
-                }
-                Button("ライブラリから選ぶ") {
-                    imageSource = .photoLibrary
-                    showImagePicker = true
-                }
-                Button("キャンセル", role: .cancel) {}
+//            .confirmationDialog("レシピの写真を選んでください", isPresented: $showActionSheet, titleVisibility: .visible) {
+//                Button("カメラで撮影") {
+//                    imageSource = .camera
+//                    showImagePicker = true
+//                }
+//                Button("ライブラリから選ぶ") {
+//                    imageSource = .photoLibrary
+//                    showImagePicker = true
+//                }
+//                Button("キャンセル", role: .cancel) {}
+//            }
+            .sheet(isPresented: $showCameraActionSheet) {
+                CameraActionSheetView(
+                    onCamera: {
+                        showCameraActionSheet = false
+                        imageSource = .camera
+                        showImagePicker = true
+                    },
+                    onLibrary: {
+                        showCameraActionSheet = false
+                        imageSource = .photoLibrary
+                        showImagePicker = true
+                    },
+                    onCancel: {
+                        showCameraActionSheet = false
+                    }
+                )
+                .presentationDetents([.height(220)])
+                //.presentationDetents([.medium])
             }
             // 手打ち入力へ遷移
             .navigationDestination(isPresented: $showManualInput) {
@@ -75,8 +107,20 @@ struct RegistrationMethodView: View {
             }
             // 画像選択へ遷移（P2-02で実装）
             .sheet(isPresented: $showImagePicker) {
-                ImagePickerView(sourceType: imageSource)
+                ImagePickerView(sourceType: imageSource, selectedImage: $selectedImage)
             }
+            .onChange(of: selectedImage) { _, image in
+                guard image != nil else { return }
+                showImagePicker = false
+                navigateToAnalyzing = true
+            }
+            
+            .navigationDestination(isPresented: $navigateToAnalyzing) {
+                if let image = selectedImage {
+                    AnalyzingView(image: image)
+                }
+            }
+
         }
     }
 }

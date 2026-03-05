@@ -1,0 +1,166 @@
+//
+//  HomeView.swift
+//  TasteLog
+//
+//  Created by Fukushima Haruka on 2026/03/05.
+//
+import SwiftUI
+import SwiftData
+
+struct HomeView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \CookingLog.cookedAt, order: .reverse) private var recentLogs: [CookingLog]
+
+    @State private var selectedMood: Mood? = nil
+    @State private var navigateToFilter = false
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+
+                    // TODAY'S MOOD
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("TODAY'S MOOD")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                            .kerning(1)
+
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
+                            ForEach(Mood.allCases) { mood in
+                                MoodCell(
+                                    mood: mood,
+                                    isSelected: selectedMood == mood
+                                ) {
+                                    selectedMood = mood
+                                }
+                            }
+                        }
+
+                        Button {
+                            navigateToFilter = true
+                        } label: {
+                            HStack {
+                                Text("次へ")
+                                    .font(.system(size: 15, weight: .bold))
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 13, weight: .bold))
+                            }
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(selectedMood == nil ? Color.secondary : Color.primary)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                        .disabled(selectedMood == nil)
+                        .animation(.easeInOut(duration: 0.2), value: selectedMood)
+                    }
+                    .padding(.horizontal, 20)
+
+                    // 最近の記録
+                    if !recentLogs.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Text("最近の記録")
+                                    .font(.system(size: 15, weight: .semibold))
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(.horizontal, 20)
+
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 12) {
+                                    ForEach(recentLogs.prefix(5)) { log in
+                                        RecentLogCard(log: log)
+                                    }
+                                }
+                                .padding(.horizontal, 20)
+                            }
+                        }
+                    }
+                }
+                .padding(.top, 20)
+                .padding(.bottom, 40)
+            }
+            .navigationTitle("今日、何を食べる？")
+            .navigationBarTitleDisplayMode(.large)
+            .navigationDestination(isPresented: $navigateToFilter) {
+                if let mood = selectedMood {
+                    FilterView(mood: mood)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - MoodCell
+struct MoodCell: View {
+    let mood: Mood
+    let isSelected: Bool
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(spacing: 4) {
+                Text(mood.emoji)
+                    .font(.system(size: 28))
+                Text(mood.rawValue)
+                    .font(.system(size: 10, weight: isSelected ? .bold : .regular))
+                    .foregroundStyle(isSelected ? .primary : .secondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .background(isSelected ? Color(.systemBackground) : Color(.systemGray6))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay {
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(isSelected ? Color.primary : Color.clear, lineWidth: 1.5)
+            }
+        }
+        .buttonStyle(.plain)
+        .animation(.easeInOut(duration: 0.15), value: isSelected)
+    }
+}
+
+// MARK: - RecentLogCard
+struct RecentLogCard: View {
+    let log: CookingLog
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            // 料理写真 or プレースホルダー
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color(.systemGray5))
+                .frame(width: 120, height: 80)
+                .overlay {
+                    if let urlString = log.recipe?.dishImageURL,
+                       let url = URL(string: urlString) {
+                        AsyncImage(url: url) { image in
+                            image.resizable().scaledToFill()
+                        } placeholder: {
+                            ProgressView()
+                        }
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    } else {
+                        Image(systemName: "fork.knife")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+            Text(log.recipe?.name ?? "不明")
+                .font(.system(size: 11, weight: .semibold))
+                .lineLimit(1)
+                .frame(width: 120, alignment: .leading)
+
+            HStack(spacing: 4) {
+                Text(log.cookedAt.formatted(.dateTime.month().day()))
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
+                Text(log.moodEnum.emoji)
+                    .font(.system(size: 10))
+            }
+        }
+    }
+}
