@@ -160,6 +160,12 @@ struct URLInputView: View {
 
     private func analyze() async {
         errorMessage = nil
+        guard let normalizedURL = normalizedURLString(from: urlText) else {
+            errorMessage = "URLの形式が正しくありません。https:// から始まるURLを入力してください。"
+            return
+        }
+        urlText = normalizedURL
+
         isLoading = true
         resetAnalysisSteps()
         defer {
@@ -169,7 +175,7 @@ struct URLInputView: View {
         }
 
         do {
-            let parsed = try await gemini.analyzeRecipeURL(urlText) { phase in
+            let parsed = try await gemini.analyzeRecipeURL(normalizedURL) { phase in
                 Task { @MainActor in
                     completeSteps(upTo: phase)
                 }
@@ -181,8 +187,34 @@ struct URLInputView: View {
             result = parsed
             navigateToConfirm = true
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = UserFacingError.message(
+                for: error,
+                fallback: "URLの解析に失敗しました。URLを確認して再度お試しください。"
+            )
         }
+    }
+
+    private func normalizedURLString(from raw: String) -> String? {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+
+        let candidate: String
+        if trimmed.hasPrefix("http://") || trimmed.hasPrefix("https://") {
+            candidate = trimmed
+        } else if trimmed.contains(".") {
+            candidate = "https://\(trimmed)"
+        } else {
+            return nil
+        }
+
+        guard let url = URL(string: candidate),
+              let scheme = url.scheme?.lowercased(),
+              (scheme == "http" || scheme == "https"),
+              let host = url.host,
+              host.contains(".") else {
+            return nil
+        }
+        return candidate
     }
 
     private func resetAnalysisSteps() {

@@ -12,12 +12,15 @@ struct TimerView: View {
     let mood: Mood
 
     @Query(sort: \CookingLog.cookedAt, order: .reverse) private var allLogs: [CookingLog]
+    private let gemini = GeminiService()
     @State private var elapsedSeconds: Int
     @State private var isRunning = false
     @State private var currentStep = 0
     @State private var navigateToLog = false
     @State private var timer: Timer? = nil
     @State private var showOverview = true
+    @State private var aiSuggestion: String? = nil
+    @State private var isGeneratingSuggestion = false
 
     init(recipe: Recipe, mood: Mood) {
         self.recipe = recipe
@@ -39,6 +42,10 @@ struct TimerView: View {
 
     private var nextSuggestion: String? {
         MemoSuggestionService.suggestion(for: recipe, logs: allLogs)
+    }
+
+    private var suggestionText: String? {
+        aiSuggestion ?? nextSuggestion
     }
 
     var body: some View {
@@ -72,7 +79,23 @@ struct TimerView: View {
                 }
             }
 
-            if let nextSuggestion {
+            if isGeneratingSuggestion && suggestionText == nil {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("次はこうしませんか？")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                    HStack(spacing: 8) {
+                        ProgressView()
+                            .scaleEffect(0.9)
+                        Text("提案を作成中...")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(12)
+                    .background(AppTheme.accentBg)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+            } else if let suggestionText {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("次はこうしませんか？")
                         .font(.system(size: 12, weight: .semibold))
@@ -80,7 +103,7 @@ struct TimerView: View {
                     HStack(alignment: .top, spacing: 8) {
                         Image(systemName: "lightbulb.fill")
                             .foregroundStyle(AppTheme.accent)
-                        Text(nextSuggestion)
+                        Text(suggestionText)
                             .font(.system(size: 14))
                             .lineSpacing(3)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -212,6 +235,9 @@ struct TimerView: View {
         .navigationDestination(isPresented: $navigateToLog) {
             CookingLogView(recipe: recipe, mood: mood)
         }
+        .task(id: allLogs.count) {
+            await generateSuggestion()
+        }
         .onDisappear { stopTimer() }
     }
 
@@ -240,5 +266,34 @@ struct TimerView: View {
         isRunning = false
         timer?.invalidate()
         timer = nil
+    }
+
+    @MainActor
+    private func generateSuggestion() async {
+        let memos = allLogs
+            .filter { $0.recipe?.id == recipe.id }
+            .map { $0.memo.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .prefix(3)
+            .map { $0 }
+
+        guard !memos.isEmpty else {
+            aiSuggestion = nil
+            isGeneratingSuggestion = false
+            return
+        }
+
+        isGeneratingSuggestion = true
+        defer { isGeneratingSuggestion = false }
+        do {
+            aiSuggestion = try await gemini.generateMemoBasedSuggestion(
+                recipeName: recipe.name,
+                ingredients: recipe.ingredients,
+                steps: recipe.steps,
+                recentMemos: memos
+            )
+        } catch {
+            aiSuggestion = nil
+        }
     }
 }

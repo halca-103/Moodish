@@ -15,11 +15,16 @@ struct HomeView: View {
 
                     // TODAY'S MOOD
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("TODAY'S MOOD")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(.secondary)
-                            .kerning(1)
-                            .padding(.horizontal, 20)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("TODAY'S MOOD")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(.secondary)
+                                .kerning(1)
+                            Text("ひとつ選んでください")
+                                .font(.system(size: 12))
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.horizontal, 20)
 
                         LazyVGrid(
                             columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3),
@@ -59,19 +64,42 @@ struct HomeView: View {
                         .disabled(selectedMood == nil)
                         .padding(.horizontal, 20)
                     }
+                    .padding(.vertical, 16)
+                    .background(Color(.systemBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color(.systemGray5), lineWidth: 1)
+                    )
+                    .padding(.horizontal, 16)
 
                     // 最近の記録
                     if !recentLogs.isEmpty {
                         VStack(alignment: .leading, spacing: 12) {
-                            HStack {
-                                Text("最近の記録")
-                                    .font(.system(size: 15, weight: .semibold))
-                                Spacer()
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 12))
-                                    .foregroundStyle(.secondary)
+                            NavigationLink {
+                                RecentLogsCalendarView()
+                            } label: {
+                                HStack {
+                                    Text("最近の記録")
+                                        .font(.system(size: 15, weight: .semibold))
+                                    Spacer()
+                                    HStack(spacing: 6) {
+                                        Text("カレンダーで見る")
+                                            .font(.system(size: 12, weight: .semibold))
+                                        Image(systemName: "calendar")
+                                            .font(.system(size: 12, weight: .semibold))
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 11, weight: .semibold))
+                                    }
+                                    .foregroundStyle(AppTheme.accent)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .background(AppTheme.accentBg)
+                                    .clipShape(Capsule())
+                                }
+                                .padding(.horizontal, 20)
                             }
-                            .padding(.horizontal, 20)
+                            .buttonStyle(.plain)
 
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 12) {
@@ -84,10 +112,11 @@ struct HomeView: View {
                         }
                     }
                 }
-                .padding(.top, 20)
+                .padding(.top, 16)
                 .padding(.bottom, 40)
             }
-            .navigationTitle("今日、何を食べる？")
+            .background(Color(.systemGray6))
+            .navigationTitle("今日何食べる？")
             .navigationBarTitleDisplayMode(.large)
             .navigationDestination(isPresented: $navigateToFilter) {
                 if let mood = selectedMood {
@@ -111,13 +140,17 @@ struct MoodCell: View {
                     .font(.system(size: 28))
                 Text(mood.rawValue)
                     .font(.system(size: 11, weight: isSelected ? .bold : .regular))
-                    .foregroundStyle(isSelected ? .white : .primary)
+                    .foregroundStyle(.primary)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? AnyShapeStyle(AppTheme.gradient) : AnyShapeStyle(Color(.systemGray6)))
+                    .fill(isSelected ? AnyShapeStyle(AppTheme.accentBg) : AnyShapeStyle(Color(.systemGray6)))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(isSelected ? AppTheme.accent : Color.clear, lineWidth: 1.5)
             )
         }
         .buttonStyle(.plain)

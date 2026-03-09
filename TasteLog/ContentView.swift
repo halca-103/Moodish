@@ -36,6 +36,7 @@ import SwiftUI
 
 struct ContentView: View {
     @AppStorage("selectedTab") private var selectedTab = 0
+    @AppStorage("recipeTabResetID") private var recipeTabResetID = 0
 
     init() {
         // タブバーを下部に固定・背景を白に
@@ -55,6 +56,7 @@ struct ContentView: View {
                 }
 
             RecipeListView()
+                .id(recipeTabResetID)
                 .tag(1)
                 .tabItem {
                     Label("レシピ", systemImage: "books.vertical.fill")

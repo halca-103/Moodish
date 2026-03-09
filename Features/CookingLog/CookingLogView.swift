@@ -15,15 +15,24 @@ struct CookingLogView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \CookingLog.cookedAt, order: .reverse) private var allLogs: [CookingLog]
+    private let gemini = GeminiService()
     @Environment(\.dismiss) private var dismiss
     @AppStorage("selectedTab") private var selectedTab = 0
+    @AppStorage("recipeTabResetID") private var recipeTabResetID = 0
     @State private var healthKit = HealthKitService()
     @State private var rating = 0
     @State private var memo = ""
     @State private var showSavedScreen = false
+    @State private var aiSuggestion: String? = nil
+    @State private var isGeneratingSuggestion = false
+    @State private var lastLearningSummaries: [String] = []
     
     private var nextSuggestion: String? {
         MemoSuggestionService.suggestion(for: recipe, logs: allLogs)
+    }
+
+    private var suggestionText: String? {
+        aiSuggestion ?? nextSuggestion
     }
 
     var body: some View {
@@ -71,7 +80,23 @@ struct CookingLogView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
 
-                if let nextSuggestion {
+                if isGeneratingSuggestion && suggestionText == nil {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("次はこうしませんか？")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                        HStack(spacing: 8) {
+                            ProgressView()
+                                .scaleEffect(0.9)
+                            Text("提案を作成中...")
+                                .font(.system(size: 13))
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(12)
+                        .background(AppTheme.accentBg)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                } else if let suggestionText {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("次はこうしませんか？")
                             .font(.system(size: 13, weight: .semibold))
@@ -79,7 +104,7 @@ struct CookingLogView: View {
                         HStack(alignment: .top, spacing: 8) {
                             Image(systemName: "lightbulb.fill")
                                 .foregroundStyle(AppTheme.accent)
-                            Text(nextSuggestion)
+                            Text(suggestionText)
                                 .font(.system(size: 14))
                                 .lineSpacing(3)
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -105,9 +130,12 @@ struct CookingLogView: View {
             }
         }
         .fullScreenCover(isPresented: $showSavedScreen) {
-            LogSavedView {
-                navigateToMoodSelection()
+            LogSavedView(summaries: lastLearningSummaries) {
+                navigateToRecipeList()
             }
+        }
+        .task(id: allLogs.count) {
+            await generateSuggestion()
         }
     }
 
@@ -124,20 +152,23 @@ struct CookingLogView: View {
         )
         let repo = LogRepository(context: modelContext)
         try? repo.save(log)
+        lastLearningSummaries = buildLearningSummaries(sleepHours: sleepHours)
 
         await MainActor.run {
             showSavedScreen = true
         }
     }
 
-    private func navigateToMoodSelection() {
-        // ホームタブ（index 0）に戻す
+    private func navigateToRecipeList() {
+        recipeTabResetID += 1
+        selectedTab = 1
+
+        // 表示中の画面を閉じてレシピ一覧ルートへ戻す
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
               let window = windowScene.windows.first else { return }
 
-        // NavigationStack を全部popしてからタブを0に切り替え
         if let tabVC = findTabBarController(in: window.rootViewController) {
-            tabVC.selectedIndex = 0
+            tabVC.selectedIndex = 1
         }
         window.rootViewController?.dismiss(animated: true)
     }
@@ -149,9 +180,61 @@ struct CookingLogView: View {
         }
         return nil
     }
+
+    @MainActor
+    private func generateSuggestion() async {
+        let memos = allLogs
+            .filter { $0.recipe?.id == recipe.id }
+            .map { $0.memo.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .prefix(3)
+            .map { $0 }
+
+        guard !memos.isEmpty else {
+            aiSuggestion = nil
+            isGeneratingSuggestion = false
+            return
+        }
+
+        isGeneratingSuggestion = true
+        defer { isGeneratingSuggestion = false }
+        do {
+            aiSuggestion = try await gemini.generateMemoBasedSuggestion(
+                recipeName: recipe.name,
+                ingredients: recipe.ingredients,
+                steps: recipe.steps,
+                recentMemos: memos
+            )
+        } catch {
+            aiSuggestion = nil
+        }
+    }
+
+    private func buildLearningSummaries(sleepHours: Double?) -> [String] {
+        var messages: [String] = []
+        messages.append("「\(recipe.name)」の記録を学習に反映しました")
+
+        if rating >= 4 {
+            messages.append("高評価（★\(rating)）として次回候補の優先度を上げます")
+        } else if rating > 0 {
+            messages.append("評価（★\(rating)）を反映し、提案の並び順を調整します")
+        }
+
+        let trimmedMemo = memo.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedMemo.isEmpty {
+            messages.append("メモ内容を次回の「改善提案」に反映します")
+        }
+
+        if let sleepHours {
+            messages.append("睡眠\(String(format: "%.1f", sleepHours))hを次回提案に反映します")
+        }
+
+        return Array(messages.prefix(3))
+    }
 }
 
 private struct LogSavedView: View {
+    let summaries: [String]
     let onComplete: () -> Void
 
     var body: some View {
@@ -169,12 +252,35 @@ private struct LogSavedView: View {
                 .font(.system(size: 15))
                 .foregroundStyle(.secondary)
 
+            if !summaries.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("今回の反映")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                    ForEach(summaries, id: \.self) { summary in
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 12))
+                                .foregroundStyle(AppTheme.accent)
+                            Text(summary)
+                                .font(.system(size: 13))
+                                .foregroundStyle(.primary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
+                }
+                .padding(12)
+                .background(Color(.systemGray6))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .padding(.horizontal, 24)
+            }
+
             Spacer()
 
             Button {
                 onComplete()
             } label: {
-                AppTheme.gradientButton(label: "気分を選ぶ画面へ")
+                AppTheme.gradientButton(label: "レシピ一覧へ")
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 32)

@@ -72,7 +72,7 @@ struct SuggestionView: View {
         }
     }
 
-    var suggestions: [Recipe] {
+    private var suggestionItems: [SuggestionItem] {
         let weightValue = weight.rawValue
         var filtered = allRecipes.filter { $0.weight == weightValue }
 
@@ -89,26 +89,55 @@ struct SuggestionView: View {
 
         // スコアリング：同じ気分で作った回数 + 睡眠時間との相性
         let moodValue = mood.rawValue
-        let scored = filtered.map { recipe -> (Recipe, Int) in
+        let scored = filtered.map { recipe -> SuggestionItem in
             let moodScore = allLogs.filter {
                 $0.recipe?.id == recipe.id && $0.mood == moodValue
             }.count
             let sleepFit: Int
+            var reasons: [String] = []
+
+            if moodScore > 0 {
+                reasons.append("同じ気分で\(moodScore)回作成")
+            }
+
             if let sleep = latestSleepHours {
                 if sleep < 6 {
                     sleepFit = max(0, 30 - recipe.cookingTime) // 低睡眠時は短時間メニューを優先
+                    if sleepFit > 0 {
+                        reasons.append("睡眠\(String(format: "%.1f", sleep))hで時短優先")
+                    }
                 } else if sleep >= 7.5 {
                     sleepFit = min(6, recipe.cookingTime / 5) // 余裕がある日はやや時間のかかる料理も許容
+                    if sleepFit > 0 {
+                        reasons.append("睡眠\(String(format: "%.1f", sleep))hで調理余力あり")
+                    }
                 } else {
                     sleepFit = 0
                 }
             } else {
                 sleepFit = 0
             }
-            let recentPenalty = isRecentlyCooked(recipe) ? -1000 : 0
-            return (recipe, moodScore * 10 + sleepFit + recentPenalty)
+            let isRecent = isRecentlyCooked(recipe)
+            let recentPenalty = isRecent ? -1000 : 0
+            if isRecent {
+                reasons.append("先週作ったので優先度を調整")
+            }
+
+            if reasons.isEmpty {
+                reasons.append("最近の記録からバランス提案")
+            }
+
+            return SuggestionItem(
+                recipe: recipe,
+                score: moodScore * 10 + sleepFit + recentPenalty,
+                reasons: reasons
+            )
         }
-        return scored.sorted { $0.1 > $1.1 }.map { $0.0 }
+        return scored.sorted { $0.score > $1.score }
+    }
+
+    var suggestions: [Recipe] {
+        suggestionItems.map { $0.recipe }
     }
 
     var body: some View {
@@ -157,13 +186,15 @@ struct SuggestionView: View {
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundStyle(.secondary)
                         ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 10) {
+                            LazyHStack(spacing: 10) {
                                 ForEach(recentWeekDates, id: \.self) { date in
                                     DayCookCard(date: date, logs: logsByDay[date] ?? [])
                                 }
                             }
                             .padding(.vertical, 2)
+                            .padding(.horizontal, 2)
                         }
+                        .contentShape(Rectangle())
                         Text("先週作ったレシピは、提案の優先度を下げています")
                             .font(.system(size: 12))
                             .foregroundStyle(.secondary)
@@ -181,27 +212,27 @@ struct SuggestionView: View {
                         .frame(maxWidth: .infinity)
                         .padding(.top, 80)
                     } else {
-                        if let main = suggestions.first {
+                        if let mainItem = suggestionItems.first {
                             Button {
-                                selectedRecipe = main
+                                selectedRecipe = mainItem.recipe
                                 navigateToDetail = true
                             } label: {
-                                RecipeMainCard(recipe: main)
+                                RecipeMainCard(recipe: mainItem.recipe, reasons: mainItem.reasons)
                             }
                             .buttonStyle(.plain)
                         }
 
-                        if suggestions.count > 1 {
+                        if suggestionItems.count > 1 {
                             VStack(alignment: .leading, spacing: 10) {
                                 Text("他の候補")
                                     .font(.system(size: 13))
                                     .foregroundStyle(.secondary)
-                                ForEach(suggestions.dropFirst().prefix(2)) { recipe in
+                                ForEach(Array(suggestionItems.dropFirst().prefix(2))) { item in
                                     Button {
-                                        selectedRecipe = recipe
+                                        selectedRecipe = item.recipe
                                         navigateToDetail = true
                                     } label: {
-                                        RecipeRowCard(recipe: recipe)
+                                        RecipeRowCard(recipe: item.recipe, reasons: item.reasons)
                                     }
                                     .buttonStyle(.plain)
                                 }
@@ -223,6 +254,13 @@ struct SuggestionView: View {
             latestSleepFromHealth = await healthKit.fetchSleepHours()
         }
     }
+}
+
+private struct SuggestionItem: Identifiable {
+    let recipe: Recipe
+    let score: Int
+    let reasons: [String]
+    var id: UUID { recipe.id }
 }
 
 private struct DayCookCard: View {
@@ -267,6 +305,7 @@ private struct DayCookCard: View {
 // MARK: - RecipeMainCard
 struct RecipeMainCard: View {
     let recipe: Recipe
+    let reasons: [String]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -298,6 +337,8 @@ struct RecipeMainCard: View {
                         .font(.system(size: 12))
                 }
                 .foregroundStyle(.secondary)
+
+                SuggestionReasonsView(reasons: reasons)
             }
             .padding(12)
         }
@@ -310,6 +351,7 @@ struct RecipeMainCard: View {
 // MARK: - RecipeRowCard
 struct RecipeRowCard: View {
     let recipe: Recipe
+    let reasons: [String]
 
     var body: some View {
         HStack(spacing: 12) {
@@ -339,6 +381,7 @@ struct RecipeRowCard: View {
                 }
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
+                SuggestionReasonsView(reasons: reasons)
             }
             Spacer()
             Image(systemName: "chevron.right")
@@ -349,5 +392,26 @@ struct RecipeRowCard: View {
         .background(Color(.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .shadow(color: .black.opacity(0.06), radius: 6, x: 0, y: 1)
+    }
+}
+
+private struct SuggestionReasonsView: View {
+    let reasons: [String]
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                ForEach(Array(reasons.prefix(2)), id: \.self) { reason in
+                    Text(reason)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(AppTheme.accent)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(AppTheme.accentBg)
+                        .clipShape(Capsule())
+                }
+            }
+            .padding(.top, 2)
+        }
     }
 }

@@ -15,12 +15,39 @@ struct MyPageView: View {
     @Query(filter: #Predicate<Recipe> { $0.isDefaultSeed == true }) private var defaultRecipes: [Recipe]
 
     @State private var showAllergySettings = false
+    @State private var showHowToUse = false
     @State private var showDeleteDefaultAlert = false
 
     var body: some View {
         NavigationStack {
             List {
                 Section {
+                    Button {
+                        showHowToUse = true
+                    } label: {
+                        HStack(spacing: 14) {
+                            Image(systemName: "questionmark.circle")
+                                .font(.system(size: 16))
+                                .foregroundStyle(.white)
+                                .frame(width: 30, height: 30)
+                                .background(AppTheme.accent)
+                                .clipShape(RoundedRectangle(cornerRadius: 7))
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("使い方を確認")
+                                    .font(.system(size: 15))
+                                    .foregroundStyle(.primary)
+                                Text("オンボーディング内容を見返す")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 12))
+                                .foregroundStyle(.tertiary)
+                        }
+                        .padding(.vertical, 4)
+                    }
+
                     Button {
                         showAllergySettings = true
                     } label: {
@@ -100,6 +127,9 @@ struct MyPageView: View {
             .navigationTitle("マイページ")
             .navigationDestination(isPresented: $showAllergySettings) {
                 AllergySettingsView()
+            }
+            .navigationDestination(isPresented: $showHowToUse) {
+                HowToUseView()
             }
             .alert("デフォルトレシピを削除しますか？", isPresented: $showDeleteDefaultAlert) {
                 Button("削除", role: .destructive) {

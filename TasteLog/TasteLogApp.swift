@@ -55,6 +55,7 @@ struct TasteLogApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @AppStorage("hasSeededDefaultRecipes") private var hasSeededDefaultRecipes = false
+    @AppStorage("selectedTab") private var selectedTab = 0
 
     @State private var healthKit = HealthKitService()
 
@@ -78,6 +79,8 @@ struct TasteLogApp: App {
                 }
             }
             .task {
+                // 起動時は必ずホーム（気分選択）を最初に表示
+                selectedTab = 0
                 if !hasSeededDefaultRecipes {
                     try? DefaultRecipeSeeder.seedIfNeeded(in: sharedModelContainer.mainContext)
                     hasSeededDefaultRecipes = true

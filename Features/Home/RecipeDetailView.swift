@@ -44,6 +44,31 @@ struct RecipeDetailView: View {
                         }
                     }
 
+                    if let source = recipe.sourceURL,
+                       let sourceURL = URL(string: source) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("取得元")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(.secondary)
+                            Link(destination: sourceURL) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "link")
+                                        .font(.system(size: 13, weight: .semibold))
+                                    Text(sourceURL.host ?? source)
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .lineLimit(1)
+                                    Spacer()
+                                    Image(systemName: "arrow.up.right.square")
+                                        .font(.system(size: 13))
+                                }
+                                .foregroundStyle(AppTheme.accent)
+                                .padding(12)
+                                .background(AppTheme.accentBg)
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                            }
+                        }
+                    }
+
                     Divider()
 
                     // 該当レシピのログだけ絞り込む
@@ -113,15 +138,31 @@ struct RecipeDetailView: View {
                     // 材料
                     VStack(alignment: .leading, spacing: 10) {
                         Text("材料")
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(.secondary)
-                        ForEach(recipe.ingredients, id: \.self) { ing in
-                            Text("・\(ing)")
-                                .font(.system(size: 15))
-                                .lineSpacing(3)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.vertical, 6)
+                        VStack(spacing: 0) {
+                            ForEach(Array(recipe.ingredients.enumerated()), id: \.offset) { index, ing in
+                                HStack(alignment: .top, spacing: 10) {
+                                    Circle()
+                                        .fill(AppTheme.accent)
+                                        .frame(width: 6, height: 6)
+                                        .padding(.top, 7)
+                                    Text(ing)
+                                        .font(.system(size: 16, weight: .medium))
+                                        .lineSpacing(4)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 12)
+
+                                if index < recipe.ingredients.count - 1 {
+                                    Divider()
+                                        .padding(.horizontal, 14)
+                                }
+                            }
                         }
+                        .background(Color(.systemGray6))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
 
                     Divider()
@@ -129,19 +170,24 @@ struct RecipeDetailView: View {
                     // 手順
                     VStack(alignment: .leading, spacing: 12) {
                         Text("手順")
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(.secondary)
                         ForEach(recipe.steps.indices, id: \.self) { i in
                             VStack(alignment: .leading, spacing: 8) {
                                 HStack(spacing: 8) {
+                                    Text("\(i + 1)")
+                                        .font(.system(size: 12, weight: .bold))
+                                        .foregroundStyle(.white)
+                                        .frame(width: 22, height: 22)
+                                        .background(AppTheme.accent)
+                                        .clipShape(Circle())
                                     Text("STEP \(i + 1)")
-                                        .font(.system(size: 11, weight: .bold))
+                                        .font(.system(size: 12, weight: .semibold))
                                         .foregroundStyle(.secondary)
-                                    Divider()
                                 }
                                 Text(recipe.steps[i])
-                                    .font(.system(size: 15))
-                                    .lineSpacing(6)
+                                    .font(.system(size: 16))
+                                    .lineSpacing(5)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
                             .padding(14)

@@ -90,7 +90,10 @@ struct AnalyzingView: View {
                 result = r
                 navigateToConfirm = true
             case .failure(let e):
-                errorMessage = e.localizedDescription
+                errorMessage = UserFacingError.message(
+                    for: e,
+                    fallback: "画像の解析に失敗しました。別の画像で再度お試しください。"
+                )
             default:
                 break
             }

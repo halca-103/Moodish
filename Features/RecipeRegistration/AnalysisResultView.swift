@@ -252,7 +252,8 @@ struct AnalysisResultView: View {
             ingredients: ingredients.map { $0.formattedText }.filter { !$0.isEmpty },
             steps: steps.filter { !$0.isEmpty },
             recipeImageURL: result.recipeImageURL,
-            dishImageURL: finalDishImageURL
+            dishImageURL: finalDishImageURL,
+            sourceURL: result.sourceURL
         )
         let repository = RecipeRepository(context: modelContext)
         try? repository.save(recipe)

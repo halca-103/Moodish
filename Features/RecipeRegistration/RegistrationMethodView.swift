@@ -21,6 +21,18 @@ struct RegistrationMethodView: View {
     var body: some View {
         NavigationStack {
             List {
+                // URLから登録（精度高め）
+                Button {
+                    showURLInput = true
+                } label: {
+                    MethodRow(
+                        icon: "link",
+                        title: "URLから登録",
+                        description: "クックパッド・Instagram・YouTube対応（精度が高くおすすめ）"
+                    )
+                }
+                .buttonStyle(.plain)
+
                 // 画像から登録
 //                Button {
 //                    showActionSheet = true
@@ -38,21 +50,10 @@ struct RegistrationMethodView: View {
                     MethodRow(
                         icon: "camera",
                         title: "画像から登録",
-                        description: "AIが自動でレシピを読み取る",
-                        isHighlighted: true
+                        description: "AIが自動でレシピを読み取る"
                     )
                 }
-
-                // URLから登録
-                Button {
-                    showURLInput = true
-                } label: {
-                    MethodRow(
-                        icon: "link",
-                        title: "URLから登録",
-                        description: "クックパッド・Instagram・YouTube対応"
-                    )
-                }
+                .buttonStyle(.plain)
 
                 // 手打ちで登録
                 Button {
@@ -64,6 +65,7 @@ struct RegistrationMethodView: View {
                         description: "料理名・材料・手順を入力"
                     )
                 }
+                .buttonStyle(.plain)
             }
             .navigationTitle("まずはレシピを登録")
             .navigationBarTitleDisplayMode(.inline)
@@ -137,9 +139,9 @@ private struct MethodRow: View {
         HStack(spacing: 14) {
             Image(systemName: icon)
                 .font(.system(size: 18, weight: .medium))
-                .foregroundStyle(isHighlighted ? .white : .primary)
+                .foregroundStyle(.primary)
                 .frame(width: 36, height: 36)
-                .background(isHighlighted ? Color.primary : Color(.systemGray6))
+                .background(Color(.systemGray6))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
 
             VStack(alignment: .leading, spacing: 2) {
@@ -148,12 +150,12 @@ private struct MethodRow: View {
                     .foregroundStyle(.primary)
                 Text(description)
                     .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.primary)
             }
             Spacer()
             Image(systemName: "chevron.right")
                 .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.primary)
         }
         .padding(.vertical, 4)
     }
