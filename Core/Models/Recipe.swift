@@ -18,6 +18,7 @@ class Recipe {
     var steps: [String]
     var recipeImageURL: String?   // レシピ写真（AI解析用）
     var dishImageURL: String?     // 料理写真（サムネ用）
+    var isDefaultSeed: Bool = false
     var createdAt: Date
 
     // Relationship
@@ -33,6 +34,7 @@ class Recipe {
         steps: [String] = [],
         recipeImageURL: String? = nil,
         dishImageURL: String? = nil,
+        isDefaultSeed: Bool = false,
         createdAt: Date = Date()
     ) {
         self.id = id
@@ -43,6 +45,7 @@ class Recipe {
         self.steps = steps
         self.recipeImageURL = recipeImageURL
         self.dishImageURL = dishImageURL
+        self.isDefaultSeed = isDefaultSeed
         self.createdAt = createdAt
     }
 

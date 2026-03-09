@@ -1,23 +1,3 @@
-//
-//  RecipeDetailView.swift
-//  TasteLog
-//
-//  Created by Fukushima Haruka on 2026/03/05.
-//
-//import SwiftUI
-//
-//struct RecipeDetailView: View {
-//    let recipe: Recipe
-//    let mood: Mood
-//
-//    var body: some View {
-//        Text("レシピ詳細（実装中）")
-//            .navigationTitle(recipe.name)
-//    }
-//}
-
-
-
 import SwiftUI
 import SwiftData
 
@@ -25,10 +5,10 @@ struct RecipeDetailView: View {
     let recipe: Recipe
     let mood: Mood
     @Query(sort: \CookingLog.cookedAt, order: .reverse) private var logs: [CookingLog]
-    
 
     @State private var navigateToTimer = false
-    //@Query private var logs: [CookingLog]
+    @State private var navigateToEdit = false
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
@@ -65,35 +45,65 @@ struct RecipeDetailView: View {
                     }
 
                     Divider()
-                    
-                    // 最新ログのメモを表示（材料の上）
-                    let recentMemos = logs
-                        .filter { $0.recipe?.id == recipe.id && !$0.memo.isEmpty }
-                        .sorted { $0.cookedAt > $1.cookedAt }
-                        .prefix(3)
 
-                    if !recentMemos.isEmpty {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("一言メモ")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundStyle(.secondary)
-                            ForEach(Array(recentMemos), id: \.id) { log in
-                                HStack(alignment: .top, spacing: 8) {
-                                    Text(log.moodEnum.emoji)
-                                        .font(.system(size: 14))
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(log.memo)
+                    // 該当レシピのログだけ絞り込む
+                    let recipeLogs = logs.filter { $0.recipe?.id == recipe.id }
+                    let ratedLogs = recipeLogs.filter { $0.rating > 0 }
+                    let avgRating: Double? = ratedLogs.isEmpty ? nil
+                        : Double(ratedLogs.map { $0.rating }.reduce(0, +)) / Double(ratedLogs.count)
+
+                    // 一言メモ + 評価セクション
+                    if !recipeLogs.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            // 平均評価
+                            if let avg = avgRating {
+                                HStack(spacing: 6) {
+                                    ForEach(1...5, id: \.self) { star in
+                                        Image(systemName: Double(star) <= avg ? "star.fill" : "star")
                                             .font(.system(size: 14))
-                                            .lineSpacing(3)
-                                        Text(log.cookedAt.formatted(.dateTime.month().day()))
-                                            .font(.system(size: 11))
-                                            .foregroundStyle(.secondary)
+                                            .foregroundStyle(Double(star) <= avg ? .yellow : Color(.systemGray4))
                                     }
+                                    Text(String(format: "%.1f", avg))
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundStyle(.secondary)
+                                    Text("（\(ratedLogs.count)回）")
+                                        .font(.system(size: 12))
+                                        .foregroundStyle(.secondary)
                                 }
-                                .padding(12)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(Color(.systemGray6))
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                            }
+
+                            // 一言メモ
+                            let memoLogs = recipeLogs.filter { !$0.memo.isEmpty }.prefix(3)
+                            if !memoLogs.isEmpty {
+                                Text("一言メモ")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundStyle(.secondary)
+
+                                ForEach(Array(memoLogs), id: \.id) { log in
+                                    HStack(alignment: .top, spacing: 8) {
+                                        Text(log.moodEnum.emoji)
+                                            .font(.system(size: 14))
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(log.memo)
+                                                .font(.system(size: 14))
+                                                .lineSpacing(3)
+                                            HStack(spacing: 4) {
+                                                ForEach(1...5, id: \.self) { star in
+                                                    Image(systemName: star <= log.rating ? "star.fill" : "star")
+                                                        .font(.system(size: 10))
+                                                        .foregroundStyle(star <= log.rating ? .yellow : Color(.systemGray4))
+                                                }
+                                                Text(log.cookedAt.formatted(.dateTime.month().day()))
+                                                    .font(.system(size: 11))
+                                                    .foregroundStyle(.secondary)
+                                            }
+                                        }
+                                    }
+                                    .padding(12)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .background(AppTheme.accentBg)
+                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                                }
                             }
                         }
 
@@ -106,13 +116,11 @@ struct RecipeDetailView: View {
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundStyle(.secondary)
                         ForEach(recipe.ingredients, id: \.self) { ing in
-                            HStack(spacing: 8) {
-                                Circle()
-                                    .fill(Color.primary)
-                                    .frame(width: 5, height: 5)
-                                Text(ing)
-                                    .font(.system(size: 15))
-                            }
+                            Text("・\(ing)")
+                                .font(.system(size: 15))
+                                .lineSpacing(3)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.vertical, 6)
                         }
                     }
 
@@ -124,17 +132,21 @@ struct RecipeDetailView: View {
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundStyle(.secondary)
                         ForEach(recipe.steps.indices, id: \.self) { i in
-                            HStack(alignment: .top, spacing: 12) {
-                                Text("\(i + 1)")
-                                    .font(.system(size: 12, weight: .bold))
-                                    .foregroundStyle(.white)
-                                    .frame(width: 22, height: 22)
-                                    .background(Color.primary)
-                                    .clipShape(Circle())
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack(spacing: 8) {
+                                    Text("STEP \(i + 1)")
+                                        .font(.system(size: 11, weight: .bold))
+                                        .foregroundStyle(.secondary)
+                                    Divider()
+                                }
                                 Text(recipe.steps[i])
                                     .font(.system(size: 15))
-                                    .lineSpacing(4)
+                                    .lineSpacing(6)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                             }
+                            .padding(14)
+                            .background(Color(.systemGray6))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
                     }
 
@@ -142,12 +154,12 @@ struct RecipeDetailView: View {
                     Button {
                         navigateToTimer = true
                     } label: {
-                        Text("これを作る！")
+                        Text("これを作る！ →")
                             .font(.system(size: 16, weight: .bold))
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
-                            .background(Color.primary)
+                            .background(AppTheme.gradient)
                             .clipShape(RoundedRectangle(cornerRadius: 14))
                     }
                     .padding(.top, 8)
@@ -156,8 +168,18 @@ struct RecipeDetailView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("編集") {
+                    navigateToEdit = true
+                }
+            }
+        }
         .navigationDestination(isPresented: $navigateToTimer) {
             TimerView(recipe: recipe, mood: mood)
+        }
+        .navigationDestination(isPresented: $navigateToEdit) {
+            RecipeEditView(recipe: recipe)
         }
     }
 }

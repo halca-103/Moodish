@@ -50,7 +50,7 @@ struct RegistrationMethodView: View {
                     MethodRow(
                         icon: "link",
                         title: "URLから登録",
-                        description: "クックパッド等のURLを貼る"
+                        description: "クックパッド・Instagram・YouTube対応"
                     )
                 }
 
@@ -104,7 +104,7 @@ struct RegistrationMethodView: View {
             }
             // URL入力へ遷移（P2-11で実装）
             .navigationDestination(isPresented: $showURLInput) {
-                Text("URL登録（近日実装）")
+                URLInputView()
             }
             // 画像選択へ遷移（P2-02で実装）
             .sheet(isPresented: $showImagePicker) {

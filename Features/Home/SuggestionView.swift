@@ -1,9 +1,3 @@
-//
-//  SuggestionView.swift
-//  TasteLog
-//
-//  Created by Fukushima Haruka on 2026/03/05.
-//
 import SwiftUI
 import SwiftData
 
@@ -12,12 +6,71 @@ struct SuggestionView: View {
     let weight: Weight
     let ingredients: [String]
 
+    @Environment(HealthKitService.self) private var healthKit
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Recipe.createdAt, order: .reverse) private var allRecipes: [Recipe]
     @Query(sort: \CookingLog.cookedAt, order: .reverse) private var allLogs: [CookingLog]
 
     @State private var navigateToDetail = false
     @State private var selectedRecipe: Recipe? = nil
+    @State private var latestSleepFromHealth: Double? = nil
+    private let recentAvoidDays = 7
+
+    private var latestSleepHours: Double? {
+        latestSleepFromHealth ?? allLogs.first(where: { $0.sleepHours != nil })?.sleepHours
+    }
+
+    private var sleepInsightText: String {
+        guard let sleep = latestSleepHours else {
+            switch healthKit.authorizationState {
+            case .authorized:
+                return "ヘルスケア連携中です。睡眠データ取得後に提案へ反映します"
+            case .notAvailable:
+                return "このデバイスではヘルスケア連携を利用できません"
+            default:
+                return "睡眠データ連携で、体調に合わせた提案ができます"
+            }
+        }
+        if sleep < 6 {
+            return "睡眠 \(String(format: "%.1f", sleep))h。今日は時短・負担少なめを優先"
+        } else if sleep >= 7.5 {
+            return "睡眠 \(String(format: "%.1f", sleep))h。しっかり作るメニューもおすすめ"
+        } else {
+            return "睡眠 \(String(format: "%.1f", sleep))h。バランス重視で提案中"
+        }
+    }
+
+    private var sleepInlineText: String {
+        if let sleep = latestSleepHours {
+            return "\(String(format: "%.1f", sleep))h"
+        }
+        return "--h"
+    }
+
+    private var recentWeekDates: [Date] {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        return (0..<recentAvoidDays).compactMap {
+            calendar.date(byAdding: .day, value: -$0, to: today)
+        }.reversed()
+    }
+
+    private func isRecentlyCooked(_ recipe: Recipe) -> Bool {
+        guard let latest = allLogs.first(where: { $0.recipe?.id == recipe.id })?.cookedAt else {
+            return false
+        }
+        guard let threshold = Calendar.current.date(byAdding: .day, value: -(recentAvoidDays - 1), to: Date()) else {
+            return false
+        }
+        return latest >= threshold
+    }
+
+    private var logsByDay: [Date: [CookingLog]] {
+        let calendar = Calendar.current
+        return Dictionary(grouping: allLogs) { log in
+            calendar.startOfDay(for: log.cookedAt)
+        }
+    }
 
     var suggestions: [Recipe] {
         let weightValue = weight.rawValue
@@ -34,42 +87,101 @@ struct SuggestionView: View {
             if filtered.isEmpty { filtered = allRecipes }
         }
 
-        // スコアリング：同じ気分で作った回数が多いほど上位
+        // スコアリング：同じ気分で作った回数 + 睡眠時間との相性
         let moodValue = mood.rawValue
         let scored = filtered.map { recipe -> (Recipe, Int) in
-            let score = allLogs.filter {
+            let moodScore = allLogs.filter {
                 $0.recipe?.id == recipe.id && $0.mood == moodValue
             }.count
-            return (recipe, score)
+            let sleepFit: Int
+            if let sleep = latestSleepHours {
+                if sleep < 6 {
+                    sleepFit = max(0, 30 - recipe.cookingTime) // 低睡眠時は短時間メニューを優先
+                } else if sleep >= 7.5 {
+                    sleepFit = min(6, recipe.cookingTime / 5) // 余裕がある日はやや時間のかかる料理も許容
+                } else {
+                    sleepFit = 0
+                }
+            } else {
+                sleepFit = 0
+            }
+            let recentPenalty = isRecentlyCooked(recipe) ? -1000 : 0
+            return (recipe, moodScore * 10 + sleepFit + recentPenalty)
         }
         return scored.sorted { $0.1 > $1.1 }.map { $0.0 }
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+        VStack(spacing: 0) {
+            // グラデーションヘッダー
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Text(mood.emoji)
+                    Text("×").foregroundStyle(.white.opacity(0.7))
+                    Text(weight.rawValue)
+                    Text("×").foregroundStyle(.white.opacity(0.7))
+                    Text(sleepInlineText)
+                }
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.white)
 
-                if suggestions.isEmpty {
-                    VStack(spacing: 16) {
-                        Image(systemName: "fork.knife")
-                            .font(.system(size: 48))
+                if !ingredients.isEmpty {
+                    Text(ingredients.joined(separator: "・"))
+                        .font(.system(size: 12))
+                        .foregroundStyle(.white.opacity(0.9))
+                }
+
+                Text("今日はこれにしよう")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(.white)
+
+                Label(sleepInsightText, systemImage: "bed.double.fill")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(.white.opacity(0.18))
+                    .clipShape(Capsule())
+                    .padding(.top, 6)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 20)
+            .background(AppTheme.gradientVertical)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    // 直近の調理カレンダー
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("最近の調理（7日）")
+                            .font(.system(size: 13, weight: .semibold))
                             .foregroundStyle(.secondary)
-                        Text("まだレシピが登録されていません")
-                            .font(.system(size: 15))
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 10) {
+                                ForEach(recentWeekDates, id: \.self) { date in
+                                    DayCookCard(date: date, logs: logsByDay[date] ?? [])
+                                }
+                            }
+                            .padding(.vertical, 2)
+                        }
+                        Text("先週作ったレシピは、提案の優先度を下げています")
+                            .font(.system(size: 12))
                             .foregroundStyle(.secondary)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 80)
-                } else {
-                    // メイン提案
-                    if let main = suggestions.first {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("今日はこれにしよう")
-                                .font(.system(size: 17, weight: .bold))
-                            Text("過去の記録から提案")
-                                .font(.system(size: 12))
-                                .foregroundStyle(.secondary)
 
+                    if suggestions.isEmpty {
+                        VStack(spacing: 16) {
+                            Image(systemName: "fork.knife")
+                                .font(.system(size: 48))
+                                .foregroundStyle(.secondary)
+                            Text("まだレシピが登録されていません")
+                                .font(.system(size: 15))
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 80)
+                    } else {
+                        if let main = suggestions.first {
                             Button {
                                 selectedRecipe = main
                                 navigateToDetail = true
@@ -78,37 +190,77 @@ struct SuggestionView: View {
                             }
                             .buttonStyle(.plain)
                         }
-                    }
 
-                    // 他の候補
-                    if suggestions.count > 1 {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("他の候補")
-                                .font(.system(size: 13))
-                                .foregroundStyle(.secondary)
-
-                            ForEach(suggestions.dropFirst().prefix(2)) { recipe in
-                                Button {
-                                    selectedRecipe = recipe
-                                    navigateToDetail = true
-                                } label: {
-                                    RecipeRowCard(recipe: recipe)
+                        if suggestions.count > 1 {
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text("他の候補")
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(.secondary)
+                                ForEach(suggestions.dropFirst().prefix(2)) { recipe in
+                                    Button {
+                                        selectedRecipe = recipe
+                                        navigateToDetail = true
+                                    } label: {
+                                        RecipeRowCard(recipe: recipe)
+                                    }
+                                    .buttonStyle(.plain)
                                 }
-                                .buttonStyle(.plain)
                             }
                         }
                     }
                 }
+                .padding(20)
             }
-            .padding(20)
         }
-        .navigationTitle("\(mood.emoji) \(mood.rawValue) の提案")
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(isPresented: $navigateToDetail) {
             if let recipe = selectedRecipe {
                 RecipeDetailView(recipe: recipe, mood: mood)
             }
         }
+        .task {
+            healthKit.refreshAuthorizationStatus()
+            latestSleepFromHealth = await healthKit.fetchSleepHours()
+        }
+    }
+}
+
+private struct DayCookCard: View {
+    let date: Date
+    let logs: [CookingLog]
+
+    private var dayLabel: String {
+        date.formatted(.dateTime.day())
+    }
+
+    private var weekLabel: String {
+        date.formatted(.dateTime.weekday(.abbreviated))
+    }
+
+    private var titleText: String {
+        let recipes = logs.compactMap { $0.recipe?.name }
+        if recipes.isEmpty { return "作ってない" }
+        if recipes.count == 1 { return recipes[0] }
+        return "\(recipes[0]) 他\(recipes.count - 1)品"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(weekLabel)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(.secondary)
+            Text(dayLabel)
+                .font(.system(size: 16, weight: .bold))
+            Text(titleText)
+                .font(.system(size: 11))
+                .lineLimit(2)
+                .foregroundStyle(logs.isEmpty ? .secondary : .primary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(10)
+        .frame(width: 110, height: 90, alignment: .topLeading)
+        .background(Color(.systemGray6))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
 

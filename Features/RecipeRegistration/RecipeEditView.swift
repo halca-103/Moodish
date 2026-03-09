@@ -1,36 +1,40 @@
-//
-//  ManualInputView.swift
-//  TasteLog
-//
-//  Created by Fukushima Haruka on 2026/03/04.
-//
-
 import SwiftUI
 import SwiftData
 
-struct ManualInputView: View {
+struct RecipeEditView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Bindable var recipe: Recipe
 
-    @State private var name: String = ""
-    @State private var cookingTime: Int = 15
-    @State private var weight: Weight = .normal
-    @State private var ingredients: [IngredientInput] = [IngredientInput()]
-    @State private var steps: [String] = [""]
-    
-    var onComplete: (() -> Void)? = nil
+    @State private var name: String
+    @State private var cookingTime: Int
+    @State private var weight: Weight
+    @State private var ingredients: [IngredientInput]
+    @State private var steps: [String]
 
-    var isValid: Bool { !name.trimmingCharacters(in: .whitespaces).isEmpty }
-    
+    init(recipe: Recipe) {
+        self.recipe = recipe
+        _name = State(initialValue: recipe.name)
+        _cookingTime = State(initialValue: recipe.cookingTime)
+        _weight = State(initialValue: recipe.weightEnum)
+        _ingredients = State(
+            initialValue: recipe.ingredients.isEmpty
+                ? [IngredientInput()]
+                : recipe.ingredients.map { IngredientInput.parse(from: $0) }
+        )
+        _steps = State(initialValue: recipe.steps.isEmpty ? [""] : recipe.steps)
+    }
+
+    private var isValid: Bool {
+        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
 
     var body: some View {
         List {
-            // 料理名
             Section("料理名") {
-                TextField("例：鶏むね塩レモン蒸し", text: $name)
+                TextField("料理名", text: $name)
             }
 
-            // 調理時間（ドラムピッカー）
             Section("調理時間") {
                 Picker("調理時間", selection: $cookingTime) {
                     ForEach(Array(stride(from: 5, through: 180, by: 5)), id: \.self) { min in
@@ -41,7 +45,6 @@ struct ManualInputView: View {
                 .frame(height: 120)
             }
 
-            // 重さ
             Section("重さ") {
                 Picker("重さ", selection: $weight) {
                     ForEach(Weight.allCases) { w in
@@ -51,11 +54,10 @@ struct ManualInputView: View {
                 .pickerStyle(.segmented)
             }
 
-            // 材料
             Section("材料") {
                 ForEach(ingredients.indices, id: \.self) { i in
                     VStack(alignment: .leading, spacing: 8) {
-                        TextField("食材名（例：鶏むね肉）", text: $ingredients[i].name)
+                        TextField("食材名（例：鶏もも肉）", text: $ingredients[i].name)
                         HStack(spacing: 8) {
                             TextField("分量", text: $ingredients[i].amount)
                                 .keyboardType(.decimalPad)
@@ -93,6 +95,7 @@ struct ManualInputView: View {
                 .onMove { from, to in
                     ingredients.move(fromOffsets: from, toOffset: to)
                 }
+
                 Button {
                     ingredients.append(IngredientInput())
                 } label: {
@@ -100,18 +103,17 @@ struct ManualInputView: View {
                 }
             }
 
-            // 手順
             Section("手順") {
                 ForEach(steps.indices, id: \.self) { i in
-                    HStack(alignment: .top, spacing: 10) {
+                    HStack(alignment: .top, spacing: 8) {
                         Text("\(i + 1)")
-                            .font(.system(size: 13, weight: .bold))
+                            .font(.system(size: 12, weight: .bold))
                             .foregroundStyle(.white)
-                            .frame(width: 22, height: 22)
+                            .frame(width: 20, height: 20)
                             .background(.primary)
                             .clipShape(Circle())
                         TextField("手順を入力", text: $steps[i], axis: .vertical)
-                            .lineLimit(2...5)
+                            .lineLimit(2...6)
                         if steps.count > 1 {
                             Button {
                                 steps.remove(at: i)
@@ -126,6 +128,7 @@ struct ManualInputView: View {
                 .onMove { from, to in
                     steps.move(fromOffsets: from, toOffset: to)
                 }
+
                 Button {
                     steps.append("")
                 } label: {
@@ -133,75 +136,34 @@ struct ManualInputView: View {
                 }
             }
         }
-        .navigationTitle("レシピを入力")
+        .navigationTitle("レシピを編集")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            // 登録ボタンをNavBar右上に固定（キーボード出ても見える）
+            ToolbarItem(placement: .navigationBarLeading) {
+                EditButton()
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button("登録") {
-                    saveRecipe()
+                Button("保存") {
+                    save()
                 }
                 .bold()
                 .disabled(!isValid)
             }
-            // 並び替えモード
-            ToolbarItem(placement: .navigationBarLeading) {
-                EditButton()
-            }
         }
     }
 
-//    private func saveRecipe() {
-//        let recipe = Recipe(
-//            name: name.trimmingCharacters(in: .whitespaces),
-//            cookingTime: cookingTime,
-//            weight: weight,
-//            ingredients: ingredients.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty },
-//            steps: steps.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
-//        )
-//        let repository = RecipeRepository(context: modelContext)
-//        try? repository.save(recipe)
-//        dismiss()
-//    }
-//    private func saveRecipe() {
-//        let recipe = Recipe(
-//            name: name,
-//            cookingTime: cookingTime,
-//            weight: weight,
-//            ingredients: ingredients.filter { !$0.isEmpty },
-//            steps: steps.filter { !$0.isEmpty }
-//        )
-//        let repository = RecipeRepository(context: modelContext)
-//        try? repository.save(recipe)
-//        onComplete?()
-//        dismiss()
-//    }
-    private func saveRecipe() {
-        let formattedIngredients = ingredients
+    private func save() {
+        recipe.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        recipe.cookingTime = cookingTime
+        recipe.weight = weight.rawValue
+        recipe.ingredients = ingredients
             .map { $0.formattedText }
             .filter { !$0.isEmpty }
-
-        let recipe = Recipe(
-            name: name.trimmingCharacters(in: .whitespaces),
-            cookingTime: cookingTime,
-            weight: weight,
-            ingredients: formattedIngredients,
-            steps: steps.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
-        )
-        let repository = RecipeRepository(context: modelContext)
-        try? repository.save(recipe)
-        onComplete?()
-        dismissToRoot()
-    }
-
-    private func dismissToRoot() {
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = windowScene.windows.first,
-              let root = window.rootViewController else {
-            dismiss()
-            return
-        }
-        root.dismiss(animated: true)
+        recipe.steps = steps
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        try? modelContext.save()
+        dismiss()
     }
 }
 
@@ -217,6 +179,42 @@ private struct IngredientInput: Identifiable {
         guard !n.isEmpty else { return "" }
         guard !a.isEmpty else { return n }
         return unit == .none ? "\(n) \(a)" : "\(n) \(a)\(unit.rawValue)"
+    }
+
+    static func parse(from text: String) -> IngredientInput {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return IngredientInput() }
+
+        let tokens = trimmed.split(whereSeparator: \.isWhitespace).map(String.init)
+        guard tokens.count >= 2 else {
+            return IngredientInput(name: trimmed)
+        }
+
+        let tail = tokens.last ?? ""
+        let name = tokens.dropLast().joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
+        let parsedTail = parseAmountAndUnit(from: tail)
+
+        if !name.isEmpty && (!parsedTail.amount.isEmpty || parsedTail.unit != .none) {
+            return IngredientInput(name: name, amount: parsedTail.amount, unit: parsedTail.unit)
+        }
+        return IngredientInput(name: trimmed)
+    }
+
+    private static func parseAmountAndUnit(from text: String) -> (amount: String, unit: IngredientUnit) {
+        let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if t.isEmpty { return ("", .none) }
+
+        let units = IngredientUnit.allCases.filter { $0 != .none }
+            .sorted { $0.rawValue.count > $1.rawValue.count }
+
+        for unit in units {
+            if t.hasSuffix(unit.rawValue) {
+                let amount = String(t.dropLast(unit.rawValue.count))
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                return (amount, unit)
+            }
+        }
+        return (t, .none)
     }
 }
 
@@ -236,10 +234,4 @@ private enum IngredientUnit: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
     var label: String { rawValue.isEmpty ? "なし" : rawValue }
-}
-
-#Preview {
-    NavigationStack {
-        ManualInputView()
-    }
 }

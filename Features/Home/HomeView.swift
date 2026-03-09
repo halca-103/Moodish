@@ -1,9 +1,3 @@
-//
-//  HomeView.swift
-//  TasteLog
-//
-//  Created by Fukushima Haruka on 2026/03/05.
-//
 import SwiftUI
 import SwiftData
 
@@ -25,37 +19,46 @@ struct HomeView: View {
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundStyle(.secondary)
                             .kerning(1)
+                            .padding(.horizontal, 20)
 
-                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
+                        LazyVGrid(
+                            columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3),
+                            spacing: 10
+                        ) {
                             ForEach(Mood.allCases) { mood in
-                                MoodCell(
-                                    mood: mood,
-                                    isSelected: selectedMood == mood
-                                ) {
-                                    selectedMood = mood
+                                MoodCell(mood: mood, isSelected: selectedMood == mood) {
+                                    withAnimation(.easeInOut(duration: 0.15)) {
+                                        selectedMood = mood
+                                    }
                                 }
                             }
                         }
+                        .padding(.horizontal, 20)
 
+                        // 次へボタン
                         Button {
                             navigateToFilter = true
                         } label: {
                             HStack {
-                                Text("次へ")
-                                    .font(.system(size: 15, weight: .bold))
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 13, weight: .bold))
+                                Text("→ 次へ")
+                                    .font(.system(size: 16, weight: .bold))
                             }
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
-                            .background(selectedMood == nil ? Color.secondary : Color.primary)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .background(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .fill(
+                                        selectedMood == nil
+                                            ? AnyShapeStyle(Color(.systemGray4))
+                                            : AnyShapeStyle(AppTheme.gradient)
+                                    )
+                            )
+                            .animation(.easeInOut(duration: 0.2), value: selectedMood == nil)
                         }
                         .disabled(selectedMood == nil)
-                        .animation(.easeInOut(duration: 0.2), value: selectedMood)
+                        .padding(.horizontal, 20)
                     }
-                    .padding(.horizontal, 20)
 
                     // 最近の記録
                     if !recentLogs.isEmpty {
@@ -103,24 +106,21 @@ struct MoodCell: View {
 
     var body: some View {
         Button(action: onTap) {
-            VStack(spacing: 4) {
+            VStack(spacing: 6) {
                 Text(mood.emoji)
                     .font(.system(size: 28))
                 Text(mood.rawValue)
-                    .font(.system(size: 10, weight: isSelected ? .bold : .regular))
-                    .foregroundStyle(isSelected ? .primary : .secondary)
+                    .font(.system(size: 11, weight: isSelected ? .bold : .regular))
+                    .foregroundStyle(isSelected ? .white : .primary)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
-            .background(isSelected ? Color(.systemBackground) : Color(.systemGray6))
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-            .overlay {
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(isSelected ? Color.primary : Color.clear, lineWidth: 1.5)
-            }
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isSelected ? AnyShapeStyle(AppTheme.gradient) : AnyShapeStyle(Color(.systemGray6)))
+            )
         }
         .buttonStyle(.plain)
-        .animation(.easeInOut(duration: 0.15), value: isSelected)
     }
 }
 
@@ -130,7 +130,6 @@ struct RecentLogCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            // 料理写真 or プレースホルダー
             RoundedRectangle(cornerRadius: 8)
                 .fill(Color(.systemGray5))
                 .frame(width: 120, height: 80)
@@ -139,9 +138,7 @@ struct RecentLogCard: View {
                        let url = URL(string: urlString) {
                         AsyncImage(url: url) { image in
                             image.resizable().scaledToFill()
-                        } placeholder: {
-                            ProgressView()
-                        }
+                        } placeholder: { ProgressView() }
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                     } else {
                         Image(systemName: "fork.knife")

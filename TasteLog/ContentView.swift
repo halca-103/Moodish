@@ -35,6 +35,8 @@
 import SwiftUI
 
 struct ContentView: View {
+    @AppStorage("selectedTab") private var selectedTab = 0
+
     init() {
         // タブバーを下部に固定・背景を白に
         let appearance = UITabBarAppearance()
@@ -45,22 +47,25 @@ struct ContentView: View {
     }
 
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             HomeView()
+                .tag(0)
                 .tabItem {
                     Label("ホーム", systemImage: "house.fill")
                 }
 
             RecipeListView()
+                .tag(1)
                 .tabItem {
                     Label("レシピ", systemImage: "books.vertical.fill")
                 }
 
             MyPageView()
+                .tag(2)
                 .tabItem {
                     Label("マイ", systemImage: "person.crop.circle.fill")
                 }
         }
-        .tint(.primary)
+        .tint(AppTheme.accent)
     }
 }

@@ -6,9 +6,16 @@
 //
 
 import SwiftUI
+import UIKit
+import SwiftData
 
 struct MyPageView: View {
+    @Environment(HealthKitService.self) private var healthKit
+    @Environment(\.modelContext) private var modelContext
+    @Query(filter: #Predicate<Recipe> { $0.isDefaultSeed == true }) private var defaultRecipes: [Recipe]
+
     @State private var showAllergySettings = false
+    @State private var showDeleteDefaultAlert = false
 
     var body: some View {
         NavigationStack {
@@ -41,6 +48,50 @@ struct MyPageView: View {
                     }
                 }
 
+                Section("ヘルスケア連携") {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("睡眠時間を使って提案を最適化します")
+                            .font(.system(size: 14, weight: .semibold))
+                        Text(healthStatusText)
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 2)
+
+                    Button {
+                        Task { await healthKit.requestAuthorization() }
+                    } label: {
+                        Text("ヘルスケア連携を設定")
+                    }
+
+                    if healthKit.authorizationState == .denied {
+                        Button {
+                            openAppSettings()
+                        } label: {
+                            Text("設定アプリを開く")
+                        }
+                    }
+                }
+
+                if !defaultRecipes.isEmpty {
+                    Section("デフォルトレシピ") {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("初回起動時に追加されたレシピ")
+                                .font(.system(size: 14, weight: .semibold))
+                            Text("\(defaultRecipes.count)件あります。不要なら一括削除できます")
+                                .font(.system(size: 12))
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.vertical, 2)
+
+                        Button(role: .destructive) {
+                            showDeleteDefaultAlert = true
+                        } label: {
+                            Text("デフォルトレシピを削除")
+                        }
+                    }
+                }
+
                 Section {
                     InfoRow(icon: "swift", color: .orange, title: "バージョン", value: "0.1.0")
                     InfoRow(icon: "server.rack", color: .blue, title: "データ保存", value: "ローカル")
@@ -50,7 +101,36 @@ struct MyPageView: View {
             .navigationDestination(isPresented: $showAllergySettings) {
                 AllergySettingsView()
             }
+            .alert("デフォルトレシピを削除しますか？", isPresented: $showDeleteDefaultAlert) {
+                Button("削除", role: .destructive) {
+                    try? DefaultRecipeSeeder.removeSeededRecipes(in: modelContext)
+                }
+                Button("キャンセル", role: .cancel) { }
+            } message: {
+                Text("この操作は取り消せません。")
+            }
+            .task {
+                healthKit.refreshAuthorizationStatus()
+            }
         }
+    }
+
+    private var healthStatusText: String {
+        switch healthKit.authorizationState {
+        case .notAvailable:
+            return "このデバイスではヘルスケア連携を利用できません"
+        case .notDetermined:
+            return "未設定です。連携すると睡眠に合わせた提案が有効になります"
+        case .denied:
+            return "連携がオフです。設定アプリから許可してください"
+        case .authorized:
+            return "連携中です。睡眠データを提案に活用しています"
+        }
+    }
+
+    private func openAppSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
     }
 }
 

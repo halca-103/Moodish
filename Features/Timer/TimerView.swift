@@ -5,33 +5,40 @@
 //  Created by Fukushima Haruka on 2026/03/05.
 //
 import SwiftUI
+import SwiftData
 
 struct TimerView: View {
     let recipe: Recipe
     let mood: Mood
 
-    @State private var timeRemaining: Int
+    @Query(sort: \CookingLog.cookedAt, order: .reverse) private var allLogs: [CookingLog]
+    @State private var elapsedSeconds: Int
     @State private var isRunning = false
     @State private var currentStep = 0
     @State private var navigateToLog = false
     @State private var timer: Timer? = nil
+    @State private var showOverview = true
 
     init(recipe: Recipe, mood: Mood) {
         self.recipe = recipe
         self.mood = mood
-        _timeRemaining = State(initialValue: recipe.cookingTime * 60)
+        _elapsedSeconds = State(initialValue: 0)
     }
 
     var formattedTime: String {
-        let m = timeRemaining / 60
-        let s = timeRemaining % 60
+        let m = elapsedSeconds / 60
+        let s = elapsedSeconds % 60
         return String(format: "%02d:%02d", m, s)
     }
 
     var progress: Double {
         let total = recipe.cookingTime * 60
         guard total > 0 else { return 0 }
-        return 1.0 - Double(timeRemaining) / Double(total)
+        return min(Double(elapsedSeconds) / Double(total), 1.0)
+    }
+
+    private var nextSuggestion: String? {
+        MemoSuggestionService.suggestion(for: recipe, logs: allLogs)
     }
 
     var body: some View {
@@ -62,6 +69,25 @@ struct TimerView: View {
                             .clipShape(Capsule())
                     }
                     .buttonStyle(.plain)
+                }
+            }
+
+            if let nextSuggestion {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("次はこうしませんか？")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                    HStack(alignment: .top, spacing: 8) {
+                        Image(systemName: "lightbulb.fill")
+                            .foregroundStyle(AppTheme.accent)
+                        Text(nextSuggestion)
+                            .font(.system(size: 14))
+                            .lineSpacing(3)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .padding(12)
+                    .background(AppTheme.accentBg)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
             }
 
@@ -114,6 +140,58 @@ struct TimerView: View {
                 .background(Color(.systemBackground))
                 .clipShape(RoundedRectangle(cornerRadius: 14))
                 .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            showOverview.toggle()
+                        }
+                    } label: {
+                        HStack {
+                            Text("レシピ全体を見る")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Image(systemName: showOverview ? "chevron.up" : "chevron.down")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+
+                    if showOverview {
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 8) {
+                                ForEach(recipe.steps.indices, id: \.self) { i in
+                                    Button {
+                                        currentStep = i
+                                    } label: {
+                                        HStack(alignment: .top, spacing: 8) {
+                                            Text("\(i + 1)")
+                                                .font(.system(size: 11, weight: .bold))
+                                                .foregroundStyle(i == currentStep ? .white : .secondary)
+                                                .frame(width: 18, height: 18)
+                                                .background(i == currentStep ? Color.primary : Color(.systemGray5))
+                                                .clipShape(Circle())
+                                            Text(recipe.steps[i])
+                                                .font(.system(size: 13))
+                                                .foregroundStyle(i == currentStep ? .primary : .secondary)
+                                                .lineLimit(3)
+                                                .frame(maxWidth: .infinity, alignment: .leading)
+                                        }
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 8)
+                                        .background(i == currentStep ? Color(.systemGray6) : Color.clear)
+                                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+                        .frame(maxHeight: 220)
+                    }
+                }
+                .padding(.horizontal, 4)
             }
 
             Spacer()
@@ -148,8 +226,9 @@ struct TimerView: View {
     private func startTimer() {
         isRunning = true
         timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
-            if timeRemaining > 0 {
-                timeRemaining -= 1
+            let total = recipe.cookingTime * 60
+            if elapsedSeconds < total {
+                elapsedSeconds += 1
             } else {
                 stopTimer()
                 navigateToLog = true

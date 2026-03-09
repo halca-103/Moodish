@@ -24,9 +24,22 @@
 		E9ADC25A2F582183003E81AF /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		E9ADC2E92F5A5C20003E81AF /* Exceptions for "TasteLog" folder in "TasteLog" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = E9ADC2362F581838003E81AF /* TasteLog */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		E9ADC2392F581838003E81AF /* TasteLog */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				E9ADC2E92F5A5C20003E81AF /* Exceptions for "TasteLog" folder in "TasteLog" target */,
+			);
 			path = TasteLog;
 			sourceTree = "<group>";
 		};
@@ -306,14 +319,19 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = TasteLog/TasteLog.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = U63A39Q265;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TasteLog/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "";
 				INFOPLIST_KEY_LSApplicationCategoryType = "";
 				INFOPLIST_KEY_NSCameraUsageDescription = "料理写真を撮影するためカメラを使用します";
+				INFOPLIST_KEY_NSHealthClinicalHealthRecordsShareUsageDescription = "体調に合わせた料理提案のために使用します";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "体調に合わせた料理提案のために使用します";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "体調に合わせた料理提案のために使用します";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "料理写真を保存するため写真ライブラリへ追加します";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "料理写真を保存するため写真ライブラリを使用します";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -340,14 +358,19 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = TasteLog/TasteLog.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = U63A39Q265;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TasteLog/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "";
 				INFOPLIST_KEY_LSApplicationCategoryType = "";
 				INFOPLIST_KEY_NSCameraUsageDescription = "料理写真を撮影するためカメラを使用します";
+				INFOPLIST_KEY_NSHealthClinicalHealthRecordsShareUsageDescription = "体調に合わせた料理提案のために使用します";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "体調に合わせた料理提案のために使用します";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "体調に合わせた料理提案のために使用します";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "料理写真を保存するため写真ライブラリへ追加します";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "料理写真を保存するため写真ライブラリを使用します";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

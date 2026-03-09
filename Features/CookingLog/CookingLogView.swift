@@ -7,19 +7,24 @@
 
 import SwiftUI
 import SwiftData
+import UIKit
 
 struct CookingLogView: View {
     let recipe: Recipe
     let mood: Mood
 
     @Environment(\.modelContext) private var modelContext
+    @Query(sort: \CookingLog.cookedAt, order: .reverse) private var allLogs: [CookingLog]
     @Environment(\.dismiss) private var dismiss
-
+    @AppStorage("selectedTab") private var selectedTab = 0
+    @State private var healthKit = HealthKitService()
     @State private var rating = 0
     @State private var memo = ""
-
-    // ルートまで全部戻るために使う
-    @State private var navigateToRoot = false
+    @State private var showSavedScreen = false
+    
+    private var nextSuggestion: String? {
+        MemoSuggestionService.suggestion(for: recipe, logs: allLogs)
+    }
 
     var body: some View {
         ScrollView {
@@ -65,6 +70,25 @@ struct CookingLogView: View {
                         .background(Color(.systemGray6))
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
+
+                if let nextSuggestion {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("次はこうしませんか？")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: "lightbulb.fill")
+                                .foregroundStyle(AppTheme.accent)
+                            Text(nextSuggestion)
+                                .font(.system(size: 14))
+                                .lineSpacing(3)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .padding(12)
+                        .background(AppTheme.accentBg)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                }
             }
             .padding(20)
         }
@@ -74,35 +98,88 @@ struct CookingLogView: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("保存") {
-                    saveLog()
+                    Task { await saveLog() }
                 }
                 .bold()
                 .disabled(rating == 0)
             }
         }
+        .fullScreenCover(isPresented: $showSavedScreen) {
+            LogSavedView {
+                navigateToMoodSelection()
+            }
+        }
     }
 
-    private func saveLog() {
+    private func saveLog() async {
+        let (sleepHours,     _) = await healthKit.fetchTodayData()
+
         let log = CookingLog(
             mood: mood,
             rating: rating,
             memo: memo,
+            sleepHours: sleepHours,
+            stepCount: nil,
             recipe: recipe
         )
         let repo = LogRepository(context: modelContext)
         try? repo.save(log)
 
-        // NavigationStack のルートまで全部戻る
-        // TabView のホームタブに戻る
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = windowScene.windows.first,
-              let tabBarController = window.rootViewController?.children.first as? UITabBarController
-        else {
-            dismiss()
-            return
+        await MainActor.run {
+            showSavedScreen = true
         }
-        tabBarController.selectedIndex = 0
+    }
+
+    private func navigateToMoodSelection() {
+        // ホームタブ（index 0）に戻す
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first else { return }
+
+        // NavigationStack を全部popしてからタブを0に切り替え
+        if let tabVC = findTabBarController(in: window.rootViewController) {
+            tabVC.selectedIndex = 0
+        }
         window.rootViewController?.dismiss(animated: true)
-        dismiss()
+    }
+
+    private func findTabBarController(in vc: UIViewController?) -> UITabBarController? {
+        if let tab = vc as? UITabBarController { return tab }
+        for child in vc?.children ?? [] {
+            if let found = findTabBarController(in: child) { return found }
+        }
+        return nil
+    }
+}
+
+private struct LogSavedView: View {
+    let onComplete: () -> Void
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Spacer()
+
+            Image(systemName: "sparkles")
+                .font(.system(size: 44, weight: .bold))
+                .foregroundStyle(AppTheme.accent)
+
+            Text("登録できました")
+                .font(.system(size: 24, weight: .bold))
+
+            Text("今日もレシピが少し育ちました")
+                .font(.system(size: 15))
+                .foregroundStyle(.secondary)
+
+            Spacer()
+
+            Button {
+                onComplete()
+            } label: {
+                AppTheme.gradientButton(label: "気分を選ぶ画面へ")
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 32)
+        }
+        .padding(.top, 24)
+        .background(Color(.systemBackground))
     }
 }
